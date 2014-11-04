@@ -49,6 +49,8 @@ import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.repository.Person.Sex;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.google.common.collect.Lists;
+
 /**
  * Base class for tests for {@link PersonRepository}.
  * 
@@ -1059,5 +1061,33 @@ public abstract class AbstractPersonRepositoryIntegrationTests {
 
 		assertThat(persons, hasSize(1));
 		assertThat(persons, hasItem(alicia));
+	}
+
+	/**
+	 * @see DATAMONGO-1085
+	 */
+	@Test
+	public void shouldSupportSortingByQueryDslOrderSpecifier() {
+
+		repository.deleteAll();
+
+		List<Person> persons = new ArrayList<Person>();
+		for (int i = 0; i < 3; i++) {
+
+			Person pers = new Person(String.format("Siggi %s", i), "Bar", 30);
+			pers.setAddress(new Address(String.format("Street %s", i), "12345", "SinCity"));
+
+			persons.add(pers);
+		}
+
+		repository.save(persons);
+
+		QPerson person = QPerson.person;
+
+		List<Person> result = Lists.newArrayList(repository.findAll(person.firstname.isNotNull(),
+				person.address.street.desc()));
+
+		assertThat(result, hasSize(persons.size()));
+		assertThat(result.get(0).getFirstname(), is(persons.get(2).getFirstname()));
 	}
 }
