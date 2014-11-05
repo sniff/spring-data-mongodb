@@ -47,6 +47,7 @@ import org.springframework.data.geo.Polygon;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.repository.Person.Sex;
+import org.springframework.data.querydsl.QSort;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.google.common.collect.Lists;
@@ -1089,5 +1090,50 @@ public abstract class AbstractPersonRepositoryIntegrationTests {
 
 		assertThat(result, hasSize(persons.size()));
 		assertThat(result.get(0).getFirstname(), is(persons.get(2).getFirstname()));
+	}
+
+	/**
+	 * @see DATAMONGO-1085
+	 */
+	@Test
+	public void shouldSupportSortingWithQSortByQueryDslOrderSpecifier() throws Exception {
+
+		repository.deleteAll();
+
+		List<Person> persons = new ArrayList<Person>();
+		for (int i = 0; i < 3; i++) {
+			Person pers = new Person(String.format("Siggi %s", i), "Bar", 30);
+			pers.setAddress(new Address(String.format("Street %s", i), "12345", "SinCity"));
+			persons.add(pers);
+		}
+		repository.save(persons);
+
+		PageRequest pageRequest = new PageRequest(0, 2, new QSort(person.address.street.desc()));
+		List<Person> result = Lists.newArrayList(repository.findAll(pageRequest));
+
+		assertThat(result, hasSize(pageRequest.getPageSize()));
+		assertThat(result.get(0).getFirstname(), is("Siggi 2"));
+	}
+
+	/**
+	 * @see DATAMONGO-1085
+	 */
+	@Test
+	public void shouldSupportSortingWithQSort() throws Exception {
+
+		repository.deleteAll();
+
+		List<Person> persons = new ArrayList<Person>();
+		for (int i = 0; i < 3; i++) {
+			Person pers = new Person(String.format("Siggi %s", i), "Bar", 30);
+			pers.setAddress(new Address(String.format("Street %s", i), "12345", "SinCity"));
+			persons.add(pers);
+		}
+		repository.save(persons);
+
+		List<Person> result = Lists.newArrayList(repository.findAll(new QSort(person.address.street.desc())));
+
+		assertThat(result, hasSize(persons.size()));
+		assertThat(result.get(0).getFirstname(), is("Siggi 2"));
 	}
 }
