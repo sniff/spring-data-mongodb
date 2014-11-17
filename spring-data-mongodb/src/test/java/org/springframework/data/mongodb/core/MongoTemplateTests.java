@@ -235,7 +235,7 @@ public class MongoTemplateTests {
 			template.insert(person);
 			fail("Expected DataIntegrityViolationException!");
 		} catch (DataIntegrityViolationException e) {
-			assertThat(e.getMessage(), containsString("E11000 duplicate key error index: database.person.$_id_  dup key:"));
+			assertThat(e.getMessage(), containsString("E11000 duplicate key error index: database.person.$_id_"));
 		}
 	}
 
@@ -289,8 +289,7 @@ public class MongoTemplateTests {
 			template.save(person);
 			fail("Expected DataIntegrityViolationException!");
 		} catch (DataIntegrityViolationException e) {
-			assertThat(e.getMessage(),
-					containsString("E11000 duplicate key error index: database.person.$firstName_-1  dup key:"));
+			assertThat(e.getMessage(), containsString("E11000 duplicate key error index: database.person.$firstName_-1"));
 		}
 	}
 
@@ -317,6 +316,11 @@ public class MongoTemplateTests {
 		template.insertAll(records);
 	}
 
+	/**
+	 * This one fails against MongoDB 2.8.0-rc0 as {@code dropDups} is either not correctly set or returned.
+	 * 
+	 * @see https://jira.mongodb.org/browse/SERVER-16181
+	 */
 	@Test
 	public void testEnsureIndex() throws Exception {
 
@@ -677,8 +681,8 @@ public class MongoTemplateTests {
 		Query q = new Query(Criteria.where("text").regex("^Hello.*"));
 		Message found1 = template.findAndRemove(q, Message.class);
 		Message found2 = template.findAndRemove(q, Message.class);
-		// Message notFound = template.findAndRemove(q, Message.class);
-		DBObject notFound = template.getCollection("").findAndRemove(q.getQueryObject());
+
+		Message notFound = template.findAndRemove(q, Message.class);
 		assertThat(found1, notNullValue());
 		assertThat(found2, notNullValue());
 		assertThat(notFound, nullValue());
